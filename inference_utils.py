@@ -2,6 +2,7 @@ import av
 import os
 import pims
 import numpy as np
+from fractions import Fraction
 from torch.utils.data import Dataset
 from torchvision.transforms.functional import to_pil_image
 from PIL import Image
@@ -60,9 +61,23 @@ class VideoWriter:
         elif not isinstance(frame_rate, (int, float)):
             raise TypeError(f"frame_rate must be numeric, got {type(frame_rate)}")
         
-        print(f"DEBUG VideoWriter: About to call add_stream with rate={frame_rate} (type={type(frame_rate)})")
+        # Convert frame_rate to Fraction for older av library compatibility
         try:
-            self.stream = self.container.add_stream('h264', rate=frame_rate)
+            if isinstance(frame_rate, float):
+                # Convert float to fraction (e.g., 59.94 -> 5994/100)
+                frame_rate_fraction = Fraction(frame_rate).limit_denominator(1000)
+                print(f"DEBUG VideoWriter: Converted float {frame_rate} to fraction {frame_rate_fraction}")
+            else:
+                frame_rate_fraction = Fraction(int(frame_rate), 1)
+                print(f"DEBUG VideoWriter: Converted int {frame_rate} to fraction {frame_rate_fraction}")
+        except Exception as e:
+            print(f"DEBUG VideoWriter: Failed to convert frame_rate to fraction: {e}")
+            # Fallback to original value
+            frame_rate_fraction = frame_rate
+        
+        print(f"DEBUG VideoWriter: About to call add_stream with rate={frame_rate_fraction} (type={type(frame_rate_fraction)})")
+        try:
+            self.stream = self.container.add_stream('h264', rate=frame_rate_fraction)
             print(f"DEBUG VideoWriter: Successfully created stream")
         except Exception as e:
             print(f"DEBUG VideoWriter: Failed to create stream: {e}")
