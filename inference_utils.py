@@ -16,11 +16,15 @@ class VideoReader(Dataset):
     @property
     def frame_rate(self):
         # Ensure frame_rate is always numeric
+        print(f"DEBUG VideoReader.frame_rate: self.rate type={type(self.rate)}, value={self.rate}")
         if isinstance(self.rate, str):
             try:
-                return float(self.rate)
+                converted = float(self.rate)
+                print(f"DEBUG VideoReader.frame_rate: Converted string to float: {converted}")
+                return converted
             except ValueError:
                 raise ValueError(f"Invalid frame_rate: '{self.rate}' cannot be converted to float")
+        print(f"DEBUG VideoReader.frame_rate: Returning numeric rate: {self.rate}")
         return self.rate
         
     def __len__(self):
@@ -38,15 +42,19 @@ class VideoWriter:
     def __init__(self, path, frame_rate, bit_rate=1000000):
         self.container = av.open(path, mode='w')
         # Ensure frame_rate is numeric to prevent 'str' object has no attribute 'numerator' error
+        print(f"DEBUG VideoWriter: frame_rate type={type(frame_rate)}, value={frame_rate}")
         if isinstance(frame_rate, str):
             try:
                 frame_rate = float(frame_rate)
+                print(f"DEBUG VideoWriter: Converted string frame_rate to float: {frame_rate}")
             except ValueError:
                 raise ValueError(f"Invalid frame_rate: '{frame_rate}' cannot be converted to float")
         elif not isinstance(frame_rate, (int, float)):
             raise TypeError(f"frame_rate must be numeric, got {type(frame_rate)}")
         
+        print(f"DEBUG VideoWriter: About to call add_stream with rate={frame_rate} (type={type(frame_rate)})")
         self.stream = self.container.add_stream('h264', rate=frame_rate)
+        print(f"DEBUG VideoWriter: Successfully created stream")
         self.stream.pix_fmt = 'yuv420p'
         self.stream.bit_rate = bit_rate
     
