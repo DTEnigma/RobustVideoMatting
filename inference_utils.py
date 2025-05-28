@@ -40,7 +40,15 @@ class VideoReader(Dataset):
 
 class VideoWriter:
     def __init__(self, path, frame_rate, bit_rate=1000000):
-        self.container = av.open(path, mode='w')
+        print(f"DEBUG VideoWriter.__init__: Starting with path={path}, frame_rate={frame_rate} (type={type(frame_rate)}), bit_rate={bit_rate}")
+        
+        try:
+            self.container = av.open(path, mode='w')
+            print(f"DEBUG VideoWriter: Successfully opened container")
+        except Exception as e:
+            print(f"DEBUG VideoWriter: Failed to open container: {e}")
+            raise
+        
         # Ensure frame_rate is numeric to prevent 'str' object has no attribute 'numerator' error
         print(f"DEBUG VideoWriter: frame_rate type={type(frame_rate)}, value={frame_rate}")
         if isinstance(frame_rate, str):
@@ -53,8 +61,13 @@ class VideoWriter:
             raise TypeError(f"frame_rate must be numeric, got {type(frame_rate)}")
         
         print(f"DEBUG VideoWriter: About to call add_stream with rate={frame_rate} (type={type(frame_rate)})")
-        self.stream = self.container.add_stream('h264', rate=frame_rate)
-        print(f"DEBUG VideoWriter: Successfully created stream")
+        try:
+            self.stream = self.container.add_stream('h264', rate=frame_rate)
+            print(f"DEBUG VideoWriter: Successfully created stream")
+        except Exception as e:
+            print(f"DEBUG VideoWriter: Failed to create stream: {e}")
+            print(f"DEBUG VideoWriter: Exception type: {type(e)}")
+            raise
         self.stream.pix_fmt = 'yuv420p'
         self.stream.bit_rate = bit_rate
     
