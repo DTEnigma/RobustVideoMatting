@@ -17,15 +17,11 @@ class VideoReader(Dataset):
     @property
     def frame_rate(self):
         # Ensure frame_rate is always numeric
-        print(f"DEBUG VideoReader.frame_rate: self.rate type={type(self.rate)}, value={self.rate}")
         if isinstance(self.rate, str):
             try:
-                converted = float(self.rate)
-                print(f"DEBUG VideoReader.frame_rate: Converted string to float: {converted}")
-                return converted
+                return float(self.rate)
             except ValueError:
                 raise ValueError(f"Invalid frame_rate: '{self.rate}' cannot be converted to float")
-        print(f"DEBUG VideoReader.frame_rate: Returning numeric rate: {self.rate}")
         return self.rate
         
     def __len__(self):
@@ -42,6 +38,16 @@ class VideoReader(Dataset):
 class VideoWriter:
     def __init__(self, path, frame_rate, bit_rate=1000000):
         print(f"DEBUG VideoWriter.__init__: Starting with path={path}, frame_rate={frame_rate} (type={type(frame_rate)}), bit_rate={bit_rate}")
+        
+        # Log PyAV and system info for debugging
+        print(f"DEBUG VideoWriter: PyAV version: {av.__version__}")
+        try:
+            import subprocess
+            result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True, timeout=5)
+            ffmpeg_version = result.stdout.split('\n')[0] if result.returncode == 0 else "Unknown"
+            print(f"DEBUG VideoWriter: FFmpeg version: {ffmpeg_version}")
+        except Exception as e:
+            print(f"DEBUG VideoWriter: Could not get FFmpeg version: {e}")
         
         try:
             self.container = av.open(path, mode='w')
@@ -69,18 +75,16 @@ class VideoWriter:
             print(f"DEBUG VideoWriter: Fraction imported successfully")
             
             if isinstance(frame_rate, float):
-                # Convert float to fraction (e.g., 59.94 -> 5994/100)
+                # Convert float to fraction (e.g., 59.94 -> 2997/50)
                 frame_rate_fraction = FractionClass(frame_rate).limit_denominator(1000)
                 print(f"DEBUG VideoWriter: Converted float {frame_rate} to fraction {frame_rate_fraction}")
             else:
                 frame_rate_fraction = FractionClass(int(frame_rate), 1)
                 print(f"DEBUG VideoWriter: Converted int {frame_rate} to fraction {frame_rate_fraction}")
         except Exception as e:
-            print(f"DEBUG VideoWriter: Failed to convert frame_rate to fraction: {e}")
-            print(f"DEBUG VideoWriter: Exception details: {type(e).__name__}: {str(e)}")
-            # Fallback to original value
+            # Fallback to original value if Fraction conversion fails
+            print(f"DEBUG VideoWriter: Fraction conversion failed: {e}, using original value")
             frame_rate_fraction = frame_rate
-            print(f"DEBUG VideoWriter: Using fallback frame_rate: {frame_rate_fraction}")
         
         print(f"DEBUG VideoWriter: About to call add_stream with rate={frame_rate_fraction} (type={type(frame_rate_fraction)})")
         try:
@@ -88,9 +92,8 @@ class VideoWriter:
             print(f"DEBUG VideoWriter: Successfully created stream")
         except Exception as e:
             print(f"DEBUG VideoWriter: Failed to create stream: {e}")
-            print(f"DEBUG VideoWriter: Exception type: {type(e)}")
-            print(f"DEBUG VideoWriter: Attempted rate value: {frame_rate_fraction}")
-            print(f"DEBUG VideoWriter: Attempted rate type: {type(frame_rate_fraction)}")
+            # Log detailed codec information
+            print(f"DEBUG VideoWriter: Available codecs: {[codec.name for codec in av.codec.codecs_available]}")
             raise
         self.stream.pix_fmt = 'yuv420p'
         self.stream.bit_rate = bit_rate
