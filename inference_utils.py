@@ -11,11 +11,16 @@ class VideoReader(Dataset):
     def __init__(self, path, transform=None):
         self.video = pims.PyAVVideoReader(path)
         self.rate = self.video.frame_rate
-        print(f"DEBUG: Type of self.rate: {type(self.rate)}, Value: {self.rate}")
         self.transform = transform
         
     @property
     def frame_rate(self):
+        # Ensure frame_rate is always numeric
+        if isinstance(self.rate, str):
+            try:
+                return float(self.rate)
+            except ValueError:
+                raise ValueError(f"Invalid frame_rate: '{self.rate}' cannot be converted to float")
         return self.rate
         
     def __len__(self):
@@ -32,7 +37,16 @@ class VideoReader(Dataset):
 class VideoWriter:
     def __init__(self, path, frame_rate, bit_rate=1000000):
         self.container = av.open(path, mode='w')
-        self.stream = self.container.add_stream('h264', rate=f'{frame_rate:.4f}')
+        # Ensure frame_rate is numeric to prevent 'str' object has no attribute 'numerator' error
+        if isinstance(frame_rate, str):
+            try:
+                frame_rate = float(frame_rate)
+            except ValueError:
+                raise ValueError(f"Invalid frame_rate: '{frame_rate}' cannot be converted to float")
+        elif not isinstance(frame_rate, (int, float)):
+            raise TypeError(f"frame_rate must be numeric, got {type(frame_rate)}")
+        
+        self.stream = self.container.add_stream('h264', rate=frame_rate)
         self.stream.pix_fmt = 'yuv420p'
         self.stream.bit_rate = bit_rate
     
