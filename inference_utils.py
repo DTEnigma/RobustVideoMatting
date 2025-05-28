@@ -62,18 +62,25 @@ class VideoWriter:
             raise TypeError(f"frame_rate must be numeric, got {type(frame_rate)}")
         
         # Convert frame_rate to Fraction for older av library compatibility
+        print(f"DEBUG VideoWriter: Starting Fraction conversion for frame_rate={frame_rate}")
         try:
+            print(f"DEBUG VideoWriter: Importing Fraction...")
+            from fractions import Fraction as FractionClass
+            print(f"DEBUG VideoWriter: Fraction imported successfully")
+            
             if isinstance(frame_rate, float):
                 # Convert float to fraction (e.g., 59.94 -> 5994/100)
-                frame_rate_fraction = Fraction(frame_rate).limit_denominator(1000)
+                frame_rate_fraction = FractionClass(frame_rate).limit_denominator(1000)
                 print(f"DEBUG VideoWriter: Converted float {frame_rate} to fraction {frame_rate_fraction}")
             else:
-                frame_rate_fraction = Fraction(int(frame_rate), 1)
+                frame_rate_fraction = FractionClass(int(frame_rate), 1)
                 print(f"DEBUG VideoWriter: Converted int {frame_rate} to fraction {frame_rate_fraction}")
         except Exception as e:
             print(f"DEBUG VideoWriter: Failed to convert frame_rate to fraction: {e}")
+            print(f"DEBUG VideoWriter: Exception details: {type(e).__name__}: {str(e)}")
             # Fallback to original value
             frame_rate_fraction = frame_rate
+            print(f"DEBUG VideoWriter: Using fallback frame_rate: {frame_rate_fraction}")
         
         print(f"DEBUG VideoWriter: About to call add_stream with rate={frame_rate_fraction} (type={type(frame_rate_fraction)})")
         try:
@@ -82,6 +89,8 @@ class VideoWriter:
         except Exception as e:
             print(f"DEBUG VideoWriter: Failed to create stream: {e}")
             print(f"DEBUG VideoWriter: Exception type: {type(e)}")
+            print(f"DEBUG VideoWriter: Attempted rate value: {frame_rate_fraction}")
+            print(f"DEBUG VideoWriter: Attempted rate type: {type(frame_rate_fraction)}")
             raise
         self.stream.pix_fmt = 'yuv420p'
         self.stream.bit_rate = bit_rate
