@@ -11,6 +11,7 @@ class VideoReader(Dataset):
     def __init__(self, path, transform=None):
         self.video = pims.PyAVVideoReader(path)
         self.rate = self.video.frame_rate
+        print(f"DEBUG: Type of self.rate: {type(self.rate)}, Value: {self.rate}")
         self.transform = transform
         
     @property
